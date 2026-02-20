@@ -9,9 +9,13 @@ import json
 import uuid
 import boto3
 import requests
-import pytesseract
 from PIL import Image, ImageEnhance
 from openai import AsyncOpenAI
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 
 from app.core.config import settings
 
@@ -39,8 +43,13 @@ class SmartScannerService:
         # Step 2: Preprocess image
         img = self._preprocess(image_bytes)
 
-        # Step 3: Tesseract — general text
-        raw_text = pytesseract.image_to_string(img, lang="eng+uzb")
+        # Step 3: Tesseract — general text (Optional, skip if binary/lib missing)
+        raw_text = ""
+        if pytesseract:
+            try:
+                raw_text = pytesseract.image_to_string(img, lang="eng+uzb")
+            except Exception:
+                pass
 
         # Step 4: MathPix — mathematical expressions → LaTeX
         latex = await self._mathpix_ocr(image_bytes)
